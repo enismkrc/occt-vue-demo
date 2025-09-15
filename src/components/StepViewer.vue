@@ -48,6 +48,12 @@
         <button @click="toggleWireframe" class="control-btn">
           {{ wireframeMode ? '🔲 Katı' : '🔳 Tel Kafes' }}
         </button>
+        <button @click="showOnlyFaulty" class="control-btn">
+          🔍 Sadece Arızalı Parçalar
+        </button>
+        <button @click="showAllParts" class="control-btn">
+          👁️ Tüm Parçaları Göster
+        </button>
       </div>
       
       <div class="canvas-container">
@@ -69,7 +75,8 @@
           class="component-item"
           :class="{ 
             'faulty': component.isFaulty,
-            'highlighted': highlightedComponent === component.id 
+            'highlighted': highlightedComponent === component.id,
+            'hidden': !component.visible
           }"
           @click="highlightComponent(component.id)"
         >
@@ -79,6 +86,15 @@
             <div class="component-status" :class="component.status">
               {{ component.statusText }}
             </div>
+          </div>
+          <div class="component-controls">
+            <button 
+              @click.stop="toggleComponentVisibility(component.id)"
+              class="visibility-btn"
+              :title="component.visible ? 'Parçayı Gizle' : 'Parçayı Göster'"
+            >
+              {{ component.visible ? '👁️' : '🙈' }}
+            </button>
           </div>
         </div>
       </div>
@@ -98,6 +114,7 @@ const wireframeMode = ref(false)
 const showHighlight = ref(true)
 const highlightedComponent = ref(null)
 const animationFrameId = ref(null)
+const allMeshes = new Map() // Tüm mesh'leri saklamak için
 
 // Three.js nesneleri
 let scene = null
@@ -120,12 +137,12 @@ const faultData = ref({
 
 // Bileşen listesi
 const components = ref([
-  { id: 1, name: "Turbine Blade Assembly", icon: "🔄", isFaulty: true, status: "faulty", statusText: "Arızalı" },
-  { id: 2, name: "Compressor Stage 1", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam" },
-  { id: 3, name: "Combustion Chamber", icon: "🔥", isFaulty: false, status: "good", statusText: "Sağlam" },
-  { id: 4, name: "Fan Assembly", icon: "💨", isFaulty: false, status: "warning", statusText: "İzle" },
-  { id: 5, name: "Bearing Assembly", icon: "⚙️", isFaulty: false, status: "good", statusText: "Sağlam" },
-  { id: 6, name: "Nozzle Assembly", icon: "🚀", isFaulty: false, status: "good", statusText: "Sağlam" }
+  { id: 1, name: "Turbine Blade Assembly", icon: "🔄", isFaulty: true, status: "faulty", statusText: "Arızalı", visible: true },
+  { id: 2, name: "Compressor Stage 1", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 3, name: "Combustion Chamber", icon: "🔥", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 4, name: "Fan Assembly", icon: "💨", isFaulty: false, status: "warning", statusText: "İzle", visible: true },
+  { id: 5, name: "Bearing Assembly", icon: "⚙️", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 6, name: "Nozzle Assembly", icon: "🚀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true }
 ])
 
 // Three.js sahnesini başlat
@@ -252,11 +269,15 @@ function renderEngineModel(engineData) {
     mesh.userData = { 
       originalName: meshData.name,
       isFaulty: isFaultyComponent,
-      meshIndex: meshIndex 
+      meshIndex: meshIndex,
+      componentId: isFaultyComponent ? 1 : Math.floor(Math.random() * 5) + 2 // Basit component ID atama
     }
     
     modelGroup.add(mesh)
 
+    // Tüm mesh'leri kaydet
+    allMeshes.set(meshIndex, mesh)
+    
     // Arızalı mesh'leri kaydet
     if (isFaultyComponent) {
       faultMeshes.set(meshIndex, mesh)
@@ -311,6 +332,7 @@ function clearModel() {
     }
   }
   faultMeshes.clear()
+  allMeshes.clear()
 }
 
 // Görünümü sıfırla
@@ -364,6 +386,47 @@ function highlightComponent(componentId) {
       }
     })
   }
+}
+
+// Bileşen görünürlüğünü değiştir
+function toggleComponentVisibility(componentId) {
+  const component = components.value.find(c => c.id === componentId)
+  if (component) {
+    component.visible = !component.visible
+    
+    // İlgili mesh'lerin görünürlüğünü değiştir
+    allMeshes.forEach((mesh, index) => {
+      if (mesh.userData.componentId === componentId) {
+        mesh.visible = component.visible
+      }
+    })
+  }
+}
+
+// Sadece arızalı parçaları göster
+function showOnlyFaulty() {
+  // Tüm bileşenleri gizle
+  components.value.forEach(component => {
+    component.visible = component.isFaulty
+  })
+  
+  // Tüm mesh'leri gizle, sadece arızalı olanları göster
+  allMeshes.forEach((mesh, index) => {
+    mesh.visible = mesh.userData.isFaulty
+  })
+}
+
+// Tüm parçaları göster
+function showAllParts() {
+  // Tüm bileşenleri göster
+  components.value.forEach(component => {
+    component.visible = true
+  })
+  
+  // Tüm mesh'leri göster
+  allMeshes.forEach((mesh, index) => {
+    mesh.visible = true
+  })
 }
 
 // Pencere boyutu değişikliği
@@ -579,6 +642,12 @@ onBeforeUnmount(() => {
   border-color: #3498db;
 }
 
+.component-item.hidden {
+  opacity: 0.5;
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
 .component-icon {
   font-size: 2em;
   margin-right: 15px;
@@ -586,6 +655,27 @@ onBeforeUnmount(() => {
 
 .component-info {
   flex: 1;
+}
+
+.component-controls {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.visibility-btn {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.visibility-btn:hover {
+  background: rgba(0,0,0,0.1);
+  transform: scale(1.1);
 }
 
 .component-name {
