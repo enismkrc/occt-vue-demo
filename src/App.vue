@@ -3,13 +3,22 @@
     <div class="app-container">
       <header class="app-header">
         <div class="header-content">
-          <h1 class="app-title">🏭 CAD Model Converter & Viewer</h1>
-          <p class="app-subtitle">Convert STEP files to JSON and visualize 3D models</p>
+          <h1 class="app-title">✈️ Uçak Bakım Sistemi</h1>
+          <p class="app-subtitle">Predictive Maintenance & 3D Model Görüntüleme</p>
         </div>
       </header>
 
       <nav class="module-navigation">
         <div class="nav-container">
+          <button 
+            @click="currentModule = 'maintenance'" 
+            :class="['nav-button', { active: currentModule === 'maintenance' }]"
+          >
+            <span class="nav-icon">🔧</span>
+            <span class="nav-text">Bakım</span>
+            <span class="nav-desc">Arıza Tespiti</span>
+          </button>
+          
           <button 
             @click="currentModule = 'convert'" 
             :class="['nav-button', { active: currentModule === 'convert' }]"
@@ -32,6 +41,7 @@
 
       <main class="app-main">
         <div class="module-container">
+          <StepViewer v-if="currentModule === 'maintenance'" />
           <ConvertModule v-if="currentModule === 'convert'" />
           <ViewerModule v-if="currentModule === 'viewer'" />
         </div>
@@ -53,17 +63,19 @@
 
 <script>
 import { ref } from 'vue'
+import StepViewer from './components/StepViewer.vue'
 import ConvertModule from './components/ConvertModule.vue'
 import ViewerModule from './components/ViewerModule.vue'
 
 export default {
   name: 'App',
   components: {
+    StepViewer,
     ConvertModule,
     ViewerModule
   },
   setup() {
-    const currentModule = ref('convert')
+    const currentModule = ref('maintenance')
     
     return {
       currentModule
