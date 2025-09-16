@@ -339,6 +339,47 @@ function resetCameraView() {
   }
 }
 
+function resetView() {
+  if (!modelGroup || modelGroup.children.length === 0) {
+    resetCameraView()
+    return
+  }
+
+  // Modelin bounding box'ını hesapla
+  const bbox = new THREE.Box3()
+  modelGroup.traverse((child) => {
+    if (child.isMesh) {
+      bbox.union(new THREE.Box3().setFromObject(child))
+    }
+  })
+
+  if (!bbox.isEmpty()) {
+    const center = new THREE.Vector3()
+    const size = new THREE.Vector3()
+    bbox.getCenter(center)
+    bbox.getSize(size)
+
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const fov = camera.fov * (Math.PI / 180)
+    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2))
+    cameraZ *= (camera.aspect > 1 ? camera.aspect : 1)
+    // Modeli ekrana sığdırmak için yeterli mesafe
+    cameraZ *= 2.0
+
+    camera.position.copy(center)
+    camera.position.z += cameraZ
+    camera.position.y += cameraZ * 0.5
+    camera.lookAt(center)
+
+    if (controls) {
+      controls.target.copy(center)
+      controls.update()
+    }
+  } else {
+    resetCameraView()
+  }
+}
+
 function downloadJSON() {
   if (!result.value || !result.value.success) {
     error.value = 'No valid result to download'

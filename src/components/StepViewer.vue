@@ -126,7 +126,7 @@ let faultMeshes = new Map() // Arızalı mesh'leri saklamak için
 
 // Arıza verisi (gerçek uygulamada API'den gelecek)
 const faultData = ref({
-  componentName: "Turbine Blade Assembly",
+  componentName: "11 petrol turbine",
   faultType: "Metal Fatigue",
   detectionDate: "2024-01-15",
   remainingLife: "72 saat",
@@ -135,14 +135,23 @@ const faultData = ref({
   recommendedAction: "Acil Değişim Gerekli"
 })
 
-// Bileşen listesi
+// Bileşen listesi - Gerçek motor parçaları
 const components = ref([
-  { id: 1, name: "Turbine Blade Assembly", icon: "🔄", isFaulty: true, status: "faulty", statusText: "Arızalı", visible: true },
-  { id: 2, name: "Compressor Stage 1", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
-  { id: 3, name: "Combustion Chamber", icon: "🔥", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
-  { id: 4, name: "Fan Assembly", icon: "💨", isFaulty: false, status: "warning", statusText: "İzle", visible: true },
-  { id: 5, name: "Bearing Assembly", icon: "⚙️", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
-  { id: 6, name: "Nozzle Assembly", icon: "🚀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true }
+  { id: 1, name: "11 petrol turbine", icon: "🔄", isFaulty: true, status: "faulty", statusText: "Arızalı", visible: true },
+  { id: 2, name: "4 central mounting shaft", icon: "🔧", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 3, name: "2 prime turbine bunshing", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 4, name: "1 nose cone", icon: "🔺", isFaulty: false, status: "warning", statusText: "İzle", visible: true },
+  { id: 5, name: "5 Rear mounting shaft", icon: "🔧", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 6, name: "Jet fan1", icon: "💨", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 7, name: "10 air turbine 1", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 8, name: "10 air turbine 2", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 9, name: "10 air turbine 3", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 10, name: "10 air turbine 4", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 11, name: "10 air turbine 5", icon: "🌀", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 12, name: "12 petrol turbine 2", icon: "🔄", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 13, name: "13. petrol turbine 3", icon: "🔄", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 14, name: "14 petrol turbine 4", icon: "🔄", isFaulty: false, status: "good", statusText: "Sağlam", visible: true },
+  { id: 15, name: "21  turbine 5", icon: "🔄", isFaulty: false, status: "good", statusText: "Sağlam", visible: true }
 ])
 
 // Three.js sahnesini başlat
@@ -176,7 +185,7 @@ function initThreeDScene() {
   controls.dampingFactor = 0.25
   controls.screenSpacePanning = false
   controls.minDistance = 5
-  controls.maxDistance = 100
+  controls.maxDistance = 500
 
   // Model grubu
   modelGroup = new THREE.Group()
@@ -258,7 +267,7 @@ function renderEngineModel(engineData) {
     geometry.setIndex(new THREE.BufferAttribute(indices, 1))
 
     // Materyal oluştur - arızalı parçaları kırmızı yap
-    const isFaultyComponent = meshData.name && meshData.name.toLowerCase().includes('turbine')
+    const isFaultyComponent = meshData.name && meshData.name.toLowerCase().includes('11 petrol turbine')
     const material = new THREE.MeshStandardMaterial({
       color: isFaultyComponent ? 0xff4444 : 0xcccccc, // Arızalı parçalar kırmızı
       side: THREE.DoubleSide,
@@ -266,11 +275,25 @@ function renderEngineModel(engineData) {
     })
 
     const mesh = new THREE.Mesh(geometry, material)
+    
+    // Gerçek parça isimlerine göre component ID atama
+    let componentId = 1 // Varsayılan
+    if (meshData.name) {
+      const component = components.value.find(c => c.name === meshData.name)
+      componentId = component ? component.id : 1
+    } else {
+      // Mesh ismi boşsa, mesh index'ine göre component ID atama
+      // Jet fan1 mesh'leri: 9-27 (19 adet)
+      if (meshIndex >= 9 && meshIndex <= 27) {
+        componentId = 6 // Jet fan1 component ID
+      }
+    }
+    
     mesh.userData = { 
       originalName: meshData.name,
       isFaulty: isFaultyComponent,
       meshIndex: meshIndex,
-      componentId: isFaultyComponent ? 1 : Math.floor(Math.random() * 5) + 2 // Basit component ID atama
+      componentId: componentId
     }
     
     modelGroup.add(mesh)
@@ -305,6 +328,8 @@ function renderEngineModel(engineData) {
     const fov = camera.fov * (Math.PI / 180)
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2))
     cameraZ *= (camera.aspect > 1 ? camera.aspect : 1)
+    // Increase distance multiplier significantly to fit model completely in screen
+    //cameraZ *= 5.0
 
     camera.position.copy(center)
     camera.position.z += cameraZ
@@ -337,11 +362,53 @@ function clearModel() {
 
 // Görünümü sıfırla
 function resetView() {
-  if (camera && controls) {
-    camera.position.set(10, 10, 10)
-    camera.lookAt(0, 0, 0)
-    controls.target.set(0, 0, 0)
-    controls.update()
+  if (!modelGroup || modelGroup.children.length === 0) {
+    if (camera && controls) {
+      camera.position.set(10, 10, 10)
+      camera.lookAt(0, 0, 0)
+      controls.target.set(0, 0, 0)
+      controls.update()
+    }
+    return
+  }
+
+  // Modelin bounding box'ını hesapla
+  const bbox = new THREE.Box3()
+  modelGroup.traverse((child) => {
+    if (child.isMesh) {
+      bbox.union(new THREE.Box3().setFromObject(child))
+    }
+  })
+
+  if (!bbox.isEmpty()) {
+    const center = new THREE.Vector3()
+    const size = new THREE.Vector3()
+    bbox.getCenter(center)
+    bbox.getSize(size)
+
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const fov = camera.fov * (Math.PI / 180)
+    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2))
+    cameraZ *= (camera.aspect > 1 ? camera.aspect : 1)
+    // Modeli ekrana sığdırmak için yeterli mesafe
+    cameraZ *= 2.0
+
+    camera.position.copy(center)
+    camera.position.z += cameraZ
+    camera.position.y += cameraZ * 0.5
+    camera.lookAt(center)
+
+    if (controls) {
+      controls.target.copy(center)
+      controls.update()
+    }
+  } else {
+    if (camera && controls) {
+      camera.position.set(10, 10, 10)
+      camera.lookAt(0, 0, 0)
+      controls.target.set(0, 0, 0)
+      controls.update()
+    }
   }
 }
 
@@ -374,14 +441,19 @@ function toggleWireframe() {
 function highlightComponent(componentId) {
   highlightedComponent.value = highlightedComponent.value === componentId ? null : componentId
   
-  // İlgili mesh'leri highlight et (basit implementasyon)
+  // İlgili mesh'leri highlight et
   if (modelGroup) {
     modelGroup.traverse((child) => {
       if (child.isMesh) {
-        if (child.userData.isFaulty && componentId === 1) {
-          child.material.color.setHex(0xff0000) // Kırmızı
-        } else if (!child.userData.isFaulty) {
+        if (child.userData.componentId === componentId) {
+          // Seçili bileşeni vurgula
           child.material.color.setHex(0x00ff00) // Yeşil
+        } else if (child.userData.isFaulty) {
+          // Arızalı bileşeni kırmızı göster
+          child.material.color.setHex(0xff0000) // Kırmızı
+        } else {
+          // Diğer bileşenleri normal renkte göster
+          child.material.color.setHex(0xcccccc) // Gri
         }
       }
     })
