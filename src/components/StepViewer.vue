@@ -445,11 +445,13 @@ function highlightComponent(componentId) {
   if (modelGroup) {
     modelGroup.traverse((child) => {
       if (child.isMesh) {
-        if (child.userData.componentId === componentId) {
-          // Seçili bileşeni vurgula
-          child.material.color.setHex(0x00ff00) // Yeşil
+        if (highlightedComponent.value === componentId && child.userData.componentId === componentId) {
+          // Seçili bileşeni vurgula (sadece arızalı değilse)
+          if (!child.userData.isFaulty) {
+            child.material.color.setHex(0x00ff00) // Yeşil
+          }
         } else if (child.userData.isFaulty) {
-          // Arızalı bileşeni kırmızı göster
+          // Arızalı bileşeni her zaman kırmızı göster
           child.material.color.setHex(0xff0000) // Kırmızı
         } else {
           // Diğer bileşenleri normal renkte göster
@@ -482,9 +484,10 @@ function showOnlyFaulty() {
     component.visible = component.isFaulty
   })
   
-  // Tüm mesh'leri gizle, sadece arızalı olanları göster
+  // Tüm mesh'leri gizle, sadece arızalı component'lere ait olanları göster
   allMeshes.forEach((mesh, index) => {
-    mesh.visible = mesh.userData.isFaulty
+    const component = components.value.find(c => c.id === mesh.userData.componentId)
+    mesh.visible = component ? component.isFaulty : false
   })
 }
 
