@@ -1,32 +1,11 @@
-<div 
-  v-for="component in components" 
-  :key="component.id"
-  class="component-item"
-  :class="{ 
-    'faulty': component.isFaulty,
-    'highlighted': highlightedComponent === component.id
-  }"
-  @click="highlightComponent(component.id)"
->
-  <!-- Parça içeriği -->
-  <div class="component-content" :class="{ 'hidden': !component.visible }">
-    <div class="component-icon">{{ component.icon }}</div>
-    <div class="component-info">
-      <div class="component-name">{{ component.name }}</div>
-      <div class="component-status" :class="component.status">
-        {{ component.statusText }}
-      </div>
-    </div>
-  </div>
-  
-  <!-- Buton her zaman görünür -->
-  <div class="component-controls">
-    <button 
-      @click.stop="toggleComponentVisibility(component.id)"
-      class="visibility-btn"
-      :title="component.visible ? 'Parçayı Gizle' : 'Parçayı Göster'"
-    >
-      {{ component.visible ? '️' : '' }}
-    </button>
-  </div>
-</div>
+.component-item.inactive {
+  opacity: 0.4;
+  background: #f8f9fa;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+}
+
+.component-item.inactive .component-name {
+  text-decoration: line-through;
+  color: #999;
+}
